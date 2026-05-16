@@ -1,4 +1,4 @@
-const supabaseUrl = "PASTE_YOUR_SUPABASE_URL";
+const supabaseUrl = "xwpquozozormgcqinpuo";
 const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh3cHF1b3pvem9ybWdjcWlucHVvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4ODg1MzQsImV4cCI6MjA5NDQ2NDUzNH0.eprOMsAcoBf1e1axtpgeeFMrcIddeZoFMgaxi1Xyro8";
 
 const supabaseClient =
