@@ -1,3 +1,10 @@
+const supabaseUrl = "PASTE_YOUR_SUPABASE_URL";
+const supabaseKey = "PASTE_YOUR_SUPABASE_ANON_KEY";
+
+const supabaseClient = supabase.createClient(
+  supabaseUrl,
+  supabaseKey
+);
 
 const loginScreen = document.getElementById("loginScreen");
 const appShell = document.getElementById("appShell");
@@ -65,23 +72,36 @@ logoutBtn.addEventListener("click", () => {
 });
 
 async function fetchNotes() {
-  const response = await fetch("/api/notes");
-  const data = await response.json();
 
-  notes = data.notes;
+  const { data, error } = await supabaseClient
+    .from("notes")
+    .select("*")
+    .order("id", { ascending: false });
+
+  if (error) {
+    console.log(error);
+    return;
+  }
+
+  notes = data;
+
   renderNotes();
 }
 
 function renderNotes() {
+
   notesList.innerHTML = "";
 
   if (!notes.length) {
-    notesList.innerHTML = `<div class="empty">No notes uploaded yet</div>`;
+    notesList.innerHTML =
+      `<div class="empty">No notes uploaded yet</div>`;
     return;
   }
 
   notes.forEach(note => {
+
     const card = document.createElement("div");
+
     card.className = "card";
 
     card.innerHTML = `
@@ -94,38 +114,42 @@ function renderNotes() {
           <span class="pill">${note.type}</span>
         </div>
 
-        <p class="hint">Uploaded by ${note.contributor}</p>
-
-        <div class="status-row">
-          <span class="pill">Downloads ${note.downloads}</span>
-        </div>
+        <p class="hint">
+          Uploaded by ${note.contributor}
+        </p>
       </div>
 
       <div class="actions">
-        <button class="icon-btn view-btn">View</button>
-        <a href="${note.url}" class="icon-btn download-btn" download>Download</a>
+        <button class="icon-btn view-btn">
+          View
+        </button>
+
+        <a href="${note.pdf_url}"
+           class="icon-btn download-btn"
+           download>
+           Download
+        </a>
       </div>
     `;
 
-    card.querySelector(".view-btn").addEventListener("click", () => {
-      pdfFrame.src = note.url;
+    card.querySelector(".view-btn")
+      .addEventListener("click", () => {
+
+      pdfFrame.src = note.pdf_url;
+
       viewerName.textContent = note.title;
+
       viewerMeta.textContent = note.subject;
     });
 
-    card.querySelector(".download-btn").addEventListener("click", async () => {
-      await fetch(`/api/notes/${note.id}/download`, {
-        method: "POST"
-      });
-
-      fetchNotes();
-    });
-
     notesList.appendChild(card);
+
   });
+
 }
 
 uploadForm.addEventListener("submit", async (e) => {
+
   e.preventDefault();
 
   if (!currentUser) {
@@ -133,37 +157,71 @@ uploadForm.addEventListener("submit", async (e) => {
     return;
   }
 
-  const file = document.getElementById("noteFile").files[0];
+  const file =
+    document.getElementById("noteFile").files[0];
 
   if (!file) {
     alert("Please select PDF");
     return;
   }
 
-  const formData = new FormData();
+  const fileName =
+    Date.now() + "-" + file.name;
 
-  formData.append("title", document.getElementById("noteTitle").value);
-  formData.append("subject", document.getElementById("noteSubject").value);
-  formData.append("semester", document.getElementById("noteSemester").value);
-  formData.append("type", document.getElementById("noteType").value);
-  formData.append("contributor", currentUser.name);
-  formData.append("uploaderEmail", currentUser.email);
-  formData.append("file", file);
+  const { error: uploadError } =
+    await supabaseClient.storage
+      .from("notes")
+      .upload(fileName, file);
 
-  const response = await fetch("/api/notes", {
-    method: "POST",
-    body: formData
-  });
-
-  const data = await response.json();
-
-  if (data.success) {
-    alert("Upload successful");
-    uploadForm.reset();
-    fetchNotes();
-  } else {
-    alert("Upload failed");
+  if (uploadError) {
+    console.log(uploadError);
+    alert("PDF upload failed");
+    return;
   }
+
+  const { data } =
+    supabaseClient.storage
+      .from("notes")
+      .getPublicUrl(fileName);
+
+  const pdfUrl = data.publicUrl;
+
+  const { error } =
+    await supabaseClient
+      .from("notes")
+      .insert([
+        {
+          title:
+            document.getElementById("noteTitle").value,
+
+          subject:
+            document.getElementById("noteSubject").value,
+
+          semester:
+            document.getElementById("noteSemester").value,
+
+          type:
+            document.getElementById("noteType").value,
+
+          contributor:
+            currentUser.name,
+
+          pdf_url: pdfUrl
+        }
+      ]);
+
+  if (error) {
+    console.log(error);
+    alert("Database insert failed");
+    return;
+  }
+
+  alert("Upload successful");
+
+  uploadForm.reset();
+
+  fetchNotes();
+
 });
 
 const savedUser = getUser();
