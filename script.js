@@ -1,5 +1,5 @@
-const supabaseUrl = "PASTE_YOUR_SUPABASE_URL";
-const supabaseKey = "PASTE_YOUR_SUPABASE_ANON_KEY";
+const supabaseUrl = "xwpquozozormgcqinpuoL";
+const supabaseKey = "ap-northeast-2";
 
 const supabaseClient = supabase.createClient(
   supabaseUrl,
